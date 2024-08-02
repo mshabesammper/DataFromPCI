@@ -1,0 +1,31 @@
+service: data-from-pci-iam
+
+provider:
+  deploymentBucket: 
+    name: data-from-pci-ammper
+    skipPolicySetup: true
+  name: aws
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+  stackTags:
+    Author: mshabes
+    ProjectName: DataFromPCI
+    Name: iam
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  projectName: ${opt:projectName, 'DataFromPCI'}
+  config:
+    dev:
+      account_id: '353255664449'
+      name_stage: 'Dev'
+      rds_secret_manager_role: arn:aws:iam::381492027664:role/mshabes_access_secret_data_from_pci_dev_role
+    prod:
+      account_id: '353255664449'
+      name_stage: 'Prod'
+      rds_secret_manager_role: arn:aws:iam::381492027664:role/mshabes_access_secret_data_from_pci_prod_role
+
+resources:
+- ${file(roles.yml)}
+- ${file(policies.yml)}

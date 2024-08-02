@@ -1,0 +1,20 @@
+Resources:
+  BucketRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.projectName}${self:custom.config.${self:custom.stage}.name_stage}Role
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 
+              - lambda.amazonaws.com
+              - states.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      - Ref: STSRDSCrossAccountPolicy
+      - Ref: StepFunctionPolicy

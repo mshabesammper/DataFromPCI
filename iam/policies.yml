@@ -1,0 +1,29 @@
+Resources:
+  STSRDSCrossAccountPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: ${self:custom.projectName}${self:custom.config.${self:custom.stage}.name_stage}STSRDSCrossAccountPolicy
+      Description: Lambda policy to allow sts in ${self:custom.stage} stage
+      Path: '/'
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - sts:AssumeRole
+          Resource:
+          - ${self:custom.config.${self:custom.stage}.rds_secret_manager_role}
+  StepFunctionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: ${self:custom.projectName}${self:custom.config.${self:custom.stage}.name_stage}PolicyStepFunction
+      Description: Lambda policy to allow executa step functions in ${self:custom.stage} stage
+      Path: '/'
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - lambda:InvokeFunction
+          - states:*
+          Resource: '*'

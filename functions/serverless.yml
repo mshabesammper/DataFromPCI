@@ -1,0 +1,103 @@
+service: mshabes-data-from-pci-function
+
+provider:
+  deploymentBucket: 
+    name: data-from-pci-ammper
+    skipPolicySetup: true
+  versionFunctions: false
+  name: aws
+  runtime: python3.11
+  memorySize: 512
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+  role: arn:aws:iam::${self:custom.config.${self:custom.stage}.account_id}:role/${self:custom.projectName}${self:custom.config.${self:custom.stage}.name_stage}Role
+  vpc:
+    securityGroupIds:
+      - sg-093d303f075b3eb44
+    subnetIds:
+      - subnet-0c7804071ab7ead39
+  stackTags:
+    Author: mshabes
+    ProjectName: DataFromPCI
+    Name: Function
+  environment:
+    STAGE: ${self:custom.stage}
+    ARN_RDS_SECRET_MANAGER_ROLE: ${self:custom.config.${self:custom.stage}.arn_rds_secret_manager_role}
+    RDS_SECRET_ID: ${self:custom.config.${self:custom.stage}.rds_secret_id}
+    USERNAME_PCI: ${self:custom.config.${self:custom.stage}.username_pci}
+    PASSWORD_PCI: ${self:custom.config.${self:custom.stage}.password_pci}
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  projectName: ${opt:projectName, 'DataFromPCI'}
+  config:
+    dev:
+      account_id: '353255664449'
+      name_stage: 'Dev'
+      arn_rds_secret_manager_role: 'arn:aws:iam::381492027664:role/mshabes_access_secret_data_from_pci_dev_role'
+      rds_secret_id: 'mshabes_rds_access_data_from_pci_dev'
+      username_pci: 'ammperservices'
+      password_pci: 'Pci_Amm_SRV123!'
+    prod:
+      account_id: '353255664449'
+      name_stage: 'Prod'
+      arn_rds_secret_manager_role: 'arn:aws:iam::381492027664:role/mshabes_access_secret_data_from_pci_prod_role'
+      rds_secret_id: 'mshabes_rds_access_data_from_pci_prod'
+      username_pci: 'ammperservices'
+      password_pci: 'Pci_Amm_SRV123!'
+  pythonRequirements:
+    useDownloadCache: true
+    useStaticCache: true
+    cacheLocation: '../../cache_python_requirements_plugin'
+    staticCacheMaxVersions: 5
+    dockerizePip: non-linux
+    fileName: requirements.txt
+
+plugins:
+  - serverless-python-requirements
+  - serverless-step-functions
+
+package:
+  include:
+    - ../libs/**
+
+functions:
+  oferta-mtr-clients:
+    handler: oferta_mtr.get_clients.handler
+    timeout: 10
+  oferta-mtr-func:
+    handler: oferta_mtr.handler.handler
+    timeout: 300
+
+stepFunctions:
+  stateMachines:
+    oferta-mtr-clients:
+      events:
+        - schedule: 
+            name: OfertaMTR${self:custom.config.${self:custom.stage}.name_stage}StepFunction
+            description: 'Obtiene las ofertas MTR de los clientes'
+            rate: cron(0 11 * * ? *)
+      name: OfertaMTR${self:custom.config.${self:custom.stage}.name_stage}StepFunction
+      definition:
+        Comment: 'Obtiene los clientes de oferta MTR'
+        StartAt: 'GetClients'
+        States:
+          GetClients:
+            Type: 'Task'
+            Resource:
+              Fn::GetAtt: [oferta-mtr-clients, Arn]
+            Next: MappedTask
+          MappedTask:
+            Type: 'Map'
+            MaxConcurrency: 3
+            Iterator:
+              StartAt: Func
+              States:
+                Func:
+                  Type: 'Task'
+                  Resource:
+                    Fn::GetAtt: [oferta-mtr-func, Arn]
+                  End: true
+            End: true
+                

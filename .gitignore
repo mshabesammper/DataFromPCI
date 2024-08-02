@@ -1,0 +1,6 @@
+# Serverless directories
+*.serverless
+cache_python_requirements_plugin
+*node_modules
+__pycache__
+.DS_Store

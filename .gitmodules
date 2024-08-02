@@ -1,0 +1,3 @@
+[submodule "libs/ammper"]
+	path = libs/ammper
+	url = git@gitlab.com:mshabesammper/ammper-library.git
